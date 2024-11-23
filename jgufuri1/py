@@ -1,32 +1,145 @@
 import random
+from abc import ABC, abstractmethod
 
 class Mixin:
-    _existing_codes = set()  
+    _existing_codes = set()
 
     @staticmethod
     def generate_unique_code():
         while True:
-            code = random.randint(1000, 9999)
+            code = random.randint(1000, 1000000)
             if code not in Mixin._existing_codes:
                 Mixin._existing_codes.add(code)
                 return code
-            
 
-class Customer(Mixin):
-    def __init__(self, name, contact):
+
+class Engine:
+    def __init__(self, volume: float, h_p: int):
+        self.__volume = volume  
+        self.__h_p = h_p  
+
+    @property
+    def volume(self):
+        return self.__volume
+
+    @property
+    def h_p(self):
+        return self.__h_p
+
+    def display_info(self):
+        return f"{self.volume}L, {self.h_p} h.p."
+
+
+class Car:
+    def __init__(self, name: str, model: str, engine: Engine, price: float):
         self.name = name
-        self.contact = contact
-        self.customer_code = self.generate_unique_code()
-        self.purchases = []  
+        self.model = model
+        self.__engine = engine 
+        self.__price = price  
 
-    def add_purchase(self, car):
-        self.purchases.append(car)
+    @property
+    def engine(self):
+        return self.__engine  
+
+    @property
+    def price(self):
+        return self.__price  
+
+    def describe(self):
+        return f"{self.engine.display_info()} and costs ${self.price}."
+
+    def __str__(self):
+        return f"{self.name} {self.model} - ${self.price} with {self.engine.display_info()}"
+
+
+class Factory:
+    def __init__(self, available_cars: list[Car]):
+        self.available_cars = available_cars  
+
+    def check_availability(self, model: str):
+        for car in self.available_cars:
+            if car.model == model:  
+                return car
+        raise ValueError(f"The car model '{model}' is not available in the factory.")
+
+    def dispatch_car(self, car: Car):
+        self.available_cars.remove(car)
+        print(f"Car {car.name} has been dispatched from the factory.")
+
+
+class Entity(ABC):
+    def __init__(self, name: str):
+        self.__name = name  
+
+    @property
+    def name(self):
+        return self.__name  
+
+    @abstractmethod
+    def describe(self):
+        pass
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.name})"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class Customer(Mixin, Entity):
+    def __init__(self, name: str, contact: str):
+        super().__init__(name)
+        self.contact = contact
+        self.customer_code = self.generate_unique_code()  
+        self.__purchases = []  
+
+    @property
+    def purchases(self):
+        return self.__purchases  
+
+    def request_car(self, factory: Factory, car_model: str):
+        print(f"{self.name} (Code: {self.customer_code}) is requesting a {car_model}.")
+        try:
+            car = factory.check_availability(car_model)
+            factory.dispatch_car(car)
+            self.__purchases.append(car)
+            print(f"Car {car.name} is now owned by {self.name}.")
+            return car
+        except ValueError as e:
+            print(e)
+            return None
 
     def get_details(self):
         return {
             "name": self.name,
             "contact": self.contact,
             "customer_code": self.customer_code,
-            "purchases": [car.get_details() for car in self.purchases],
+            "purchases": [str(car) for car in self.purchases],
         }
+
+    def describe(self):
+        return f"Customer '{self.name}' has purchased {len(self.purchases)} car(s)."
+
+    def __str__(self):
+        return f"Customer(Name: {self.name}, Contact: {self.contact})"
+
+
+if __name__ == "__main__":
+    engine1 = Engine(2.0, 150)
+    engine2 = Engine(3.5, 300)
+    engine3 = Engine(1.8, 120)
+
+
+    car1 = Car("Red Sedan", "Sedan", engine1, 25000)
+    car2 = Car("Blue SUV", "SUV", engine2, 40000)
+    car3 = Car("White Hatchback", "Hatchback", engine3, 18000)
+    factory = Factory([car1, car2, car3])
+
+    customer1 = Customer("Vika", "vika889@gmail.com")
+    customer2 = Customer("Nika", "nika76@gmail.com")
+
+    purchased_car = customer1.request_car(factory, "SUV")
+    print(customer1.get_details())
     
+    purchased_car = customer2.request_car(factory, "BMW")
+    print(customer2.get_details())
