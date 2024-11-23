@@ -13,10 +13,28 @@ class Mixin:
                 return code
 
 
+class Vehicle(ABC):
+    def __init__(self, name: str, model: str):
+        self._name = name
+        self._model = model
+
+    @abstractmethod
+    def describe(self):
+        pass
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def model(self):
+        return self._model
+
+
 class Engine:
     def __init__(self, volume: float, h_p: int):
-        self.__volume = volume  
-        self.__h_p = h_p  
+        self.__volume = volume
+        self.__h_p = h_p
 
     @property
     def volume(self):
@@ -30,35 +48,71 @@ class Engine:
         return f"{self.volume}L, {self.h_p} h.p."
 
 
-class Car:
-    def __init__(self, name: str, model: str, engine: Engine, price: float):
-        self.name = name
-        self.model = model
-        self.__engine = engine 
-        self.__price = price  
+class Car(Mixin, Vehicle):
+    def __init__(self, name: str, model: str, engine: Engine, price: float, year_of_manufacture: int):
+        super().__init__(name, model)
+        self.__engine = engine
+        self.__price = price
+        self.__year_of_manufacture = year_of_manufacture
+        self.__car_code = self.generate_unique_code()
 
     @property
     def engine(self):
-        return self.__engine  
+        return self.__engine
 
     @property
     def price(self):
-        return self.__price  
+        return self.__price
+
+    @property
+    def car_code(self):
+        return self.__car_code
+
+    @property
+    def year_of_manufacture(self):
+        return self.__year_of_manufacture
 
     def describe(self):
-        return f"{self.engine.display_info()} and costs ${self.price}."
+        return f"{self.name} {self.model} with engine: {self.engine.display_info()} and costs ${self.price}."
 
     def __str__(self):
-        return f"{self.name} {self.model} - ${self.price} with {self.engine.display_info()}"
+        return f"Car(Name: {self.name}, Model: {self.model}, Engine: {self.engine.display_info()}, Price: ${self.price}, Code: {self.car_code})"
+
+    def apply_discount(self, discount_percentage: float):
+        self.__price -= self.__price * (discount_percentage / 100)
+        print(f"New price of {self.name} {self.model}: ${self.__price:.2f}")
+
+    def get_car_age(self):
+        current_year = 2024
+        return current_year - self.year_of_manufacture
+
+    def is_luxury(self):
+        luxury_threshold = 50000
+        return self.__price >= luxury_threshold
+
+    def update_price(self, new_price: float):
+        self.__price = new_price
+        print(f"Price of {self.name} {self.model} updated to ${self.__price:.2f}")
+
+    def compare_with_other_car(self, other_car: 'Car'):
+        if self.engine.h_p > other_car.engine.h_p:
+            print(f"{self.name} has more horsepower than {other_car.name}.")
+        elif self.engine.h_p < other_car.engine.h_p:
+            print(f"{self.name} has less horsepower than {other_car.name}.")
+        else:
+            print(f"{self.name} and {other_car.name} have the same horsepower.")
+
+    def is_available_in_factory(self, factory):
+        return self in factory.available_cars
 
 
 class Factory:
     def __init__(self, available_cars: list[Car]):
-        self.available_cars = available_cars  
+        self.available_cars = available_cars
 
     def check_availability(self, model: str):
         for car in self.available_cars:
-            if car.model == model:  
+            if car.model == model:
                 return car
         raise ValueError(f"The car model '{model}' is not available in the factory.")
 
@@ -67,35 +121,16 @@ class Factory:
         print(f"Car {car.name} has been dispatched from the factory.")
 
 
-class Entity(ABC):
-    def __init__(self, name: str):
-        self.__name = name  
-
-    @property
-    def name(self):
-        return self.__name  
-
-    @abstractmethod
-    def describe(self):
-        pass
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.name})"
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class Customer(Mixin, Entity):
+class Customer(Mixin):
     def __init__(self, name: str, contact: str):
-        super().__init__(name)
+        self.name = name
         self.contact = contact
-        self.customer_code = self.generate_unique_code()  
-        self.__purchases = []  
+        self.customer_code = self.generate_unique_code()
+        self.__purchases = []
 
     @property
     def purchases(self):
-        return self.__purchases  
+        return self.__purchases
 
     def request_car(self, factory: Factory, car_model: str):
         print(f"{self.name} (Code: {self.customer_code}) is requesting a {car_model}.")
@@ -129,10 +164,10 @@ if __name__ == "__main__":
     engine2 = Engine(3.5, 300)
     engine3 = Engine(1.8, 120)
 
+    car1 = Car("Red Sedan", "Sedan", engine1, 25000, 2018)
+    car2 = Car("Blue SUV", "SUV", engine2, 40000, 2020)
+    car3 = Car("White Hatchback", "Hatchback", engine3, 18000, 2017)
 
-    car1 = Car("Red Sedan", "Sedan", engine1, 25000)
-    car2 = Car("Blue SUV", "SUV", engine2, 40000)
-    car3 = Car("White Hatchback", "Hatchback", engine3, 18000)
     factory = Factory([car1, car2, car3])
 
     customer1 = Customer("Vika", "vika889@gmail.com")
@@ -140,6 +175,25 @@ if __name__ == "__main__":
 
     purchased_car = customer1.request_car(factory, "SUV")
     print(customer1.get_details())
-    
+
     purchased_car = customer2.request_car(factory, "BMW")
     print(customer2.get_details())
+
+    print("\nAll methods for Car class:")
+
+    print("1. describe()")
+    print(car1.describe())
+    print("2. __str__()")
+    print(str(car1))
+    print("3. apply_discount(10)")
+    car1.apply_discount(10)
+    print("4. get_car_age()")
+    print(car1.get_car_age())
+    print("5. is_luxury()")
+    print(car1.is_luxury())
+    print("6. update_price(22000)")
+    car1.update_price(22000)
+    print("7. compare_with_other_car(car2)")
+    car1.compare_with_other_car(car2)
+    print("8. is_available_in_factory(factory)")
+    print(car1.is_available_in_factory(factory))
