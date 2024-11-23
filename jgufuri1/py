@@ -1,0 +1,32 @@
+import random
+
+class Mixin:
+    _existing_codes = set()  
+
+    @staticmethod
+    def generate_unique_code():
+        while True:
+            code = random.randint(1000, 9999)
+            if code not in Mixin._existing_codes:
+                Mixin._existing_codes.add(code)
+                return code
+            
+
+class Customer(Mixin):
+    def __init__(self, name, contact):
+        self.name = name
+        self.contact = contact
+        self.customer_code = self.generate_unique_code()
+        self.purchases = []  
+
+    def add_purchase(self, car):
+        self.purchases.append(car)
+
+    def get_details(self):
+        return {
+            "name": self.name,
+            "contact": self.contact,
+            "customer_code": self.customer_code,
+            "purchases": [car.get_details() for car in self.purchases],
+        }
+    
